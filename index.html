@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全球金属情报局 (AI/光伏/贵金属)</title>
+    <title>全球关键金属情报局 (AI/光伏/稀缺资源)</title>
     <style>
         :root {
-            --bg-color: #0b1120;
-            --card-bg: #1e293b;
-            --text-main: #f1f5f9;
+            --bg-color: #0f172a;       /* 深蓝背景 */
+            --card-bg: #1e293b;        /* 卡片背景 */
+            --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            --gold: #fbbf24;     /* 黄金色 */
-            --energy: #38bdf8;   /* 锂/光伏蓝 */
-            --copper: #f87171;   /* 铜/AI色 */
+            --gold: #fbbf24;           /* 黄金 */
+            --strategic: #a855f7;      /* 稀缺金属(锑/铟) - 紫色 */
+            --industry: #38bdf8;       /* 工业/光伏 - 蓝色 */
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -24,19 +24,26 @@
         }
         /* 顶部导航 */
         header {
-            background: rgba(15, 23, 42, 0.9);
-            padding: 20px;
+            background: rgba(15, 23, 42, 0.95);
+            padding: 15px 20px;
             border-bottom: 1px solid #334155;
             position: sticky;
             top: 0;
             z-index: 100;
             backdrop-filter: blur(10px);
+        }
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        h1 { margin: 0; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
-        .status-dot { height: 10px; width: 10px; background-color: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #22c55e; }
+        h1 { margin: 0; font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .live-badge { 
+            font-size: 12px; background: #22c55e; color: #000; 
+            padding: 2px 6px; border-radius: 4px; font-weight: bold;
+        }
         
         /* 布局 */
         .container {
@@ -44,215 +51,207 @@
             margin: 0 auto;
             padding: 20px;
             display: grid;
-            grid-template-columns: 350px 1fr; /* 左侧行情，右侧新闻 */
+            grid-template-columns: 360px 1fr; /* 左侧行情，右侧新闻 */
             gap: 25px;
         }
         
-        /* 侧边栏：行情 */
+        /* 侧边栏 */
         .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .price-card {
             background: var(--card-bg);
             padding: 15px;
             border-radius: 12px;
-            height: fit-content;
             border: 1px solid #334155;
         }
-        
+        .sidebar-note {
+            font-size: 12px; color: #64748b; background: #0f172a; padding: 10px; border-radius: 6px;
+        }
+
         /* 标签页过滤 */
         .filter-bar {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
-            overflow-x: auto;
-            padding-bottom: 5px;
+            flex-wrap: wrap;
         }
         .filter-btn {
             background: #334155;
-            border: none;
-            color: white;
-            padding: 8px 16px;
+            border: 1px solid #475569;
+            color: #cbd5e1;
+            padding: 8px 18px;
             border-radius: 20px;
             cursor: pointer;
             font-size: 14px;
-            white-space: nowrap;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
-        .filter-btn.active { background: var(--gold); color: black; font-weight: bold; }
-        .filter-btn:hover { opacity: 0.9; }
+        .filter-btn:hover { background: #475569; }
+        .filter-btn.active { 
+            background: var(--strategic); 
+            color: white; 
+            border-color: var(--strategic); 
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+        }
+        .filter-btn.active.gold-btn { background: var(--gold); border-color: var(--gold); color: black; box-shadow: 0 0 10px rgba(251, 191, 36, 0.4); }
 
-        /* 新闻卡片网格 */
-        .news-grid {
-            display: grid;
-            gap: 15px;
-        }
+        /* 新闻卡片 */
+        .news-grid { display: grid; gap: 15px; }
         
         .news-card {
             background: var(--card-bg);
             padding: 20px;
             border-radius: 12px;
             border: 1px solid #334155;
-            transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
             overflow: hidden;
+            transition: transform 0.2s;
         }
-        .news-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            border-color: var(--text-muted);
-        }
+        .news-card:hover { transform: translateY(-2px); border-color: var(--text-muted); }
         
-        /* 类别指示条 */
-        .news-card::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 0; bottom: 0;
-            width: 4px;
-        }
-        .news-card.type-precious::before { background: var(--gold); }
-        .news-card.type-energy::before { background: var(--energy); }
-        .news-card.type-industry::before { background: var(--copper); }
+        /* 左侧彩色指示条 */
+        .news-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+        .news-card.type-strategic::before { background: var(--strategic); } /* 锑/铟 */
+        .news-card.type-precious::before { background: var(--gold); }      /* 黄金 */
+        .news-card.type-industry::before { background: var(--industry); }  /* 铜/光伏 */
 
         .news-meta {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            font-size: 12px; color: var(--text-muted); margin-bottom: 8px;
+            display: flex; align-items: center; gap: 10px;
         }
         .tag {
-            padding: 2px 8px;
-            border-radius: 4px;
-            background: rgba(255,255,255,0.1);
-            font-size: 11px;
+            padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;
         }
-        .news-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin: 0 0 10px 0;
-            line-height: 1.4;
-        }
+        .tag-strategic { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
+        .tag-gold { background: rgba(251, 191, 36, 0.2); color: #fcd34d; }
+        .tag-ind { background: rgba(56, 189, 248, 0.2); color: #7dd3fc; }
+
+        .news-title { font-size: 18px; margin: 0 0 10px 0; line-height: 1.4; }
         .news-title a { color: var(--text-main); text-decoration: none; }
-        .news-title a:hover { color: var(--gold); }
-        
-        .news-desc {
-            font-size: 14px;
-            color: #cbd5e1;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
+        .news-title a:hover { text-decoration: underline; }
+        .news-desc { font-size: 14px; color: #cbd5e1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
         .loading-msg { text-align: center; padding: 40px; color: var(--text-muted); grid-column: 1 / -1; }
-        .error-msg { color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; grid-column: 1 / -1; }
-
+        
         /* 响应式 */
-        @media (max-width: 850px) {
+        @media (max-width: 900px) {
             .container { grid-template-columns: 1fr; }
-            .sidebar { margin-bottom: 20px; }
+            .sidebar { order: -1; } /* 手机上行情在最上面 */
         }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="container" style="margin:0; padding:0; display:flex; width:100%;">
-        <h1><span class="status-dot"></span> 全球金属情报局</h1>
-        <div style="font-size: 12px; color: #94a3b8;">
-            监控: 贵金属 / 光伏 / AI算力金属
+    <div class="header-content">
+        <h1>🚀 全球关键金属情报 <span class="live-badge">LIVE</span></h1>
+        <div style="font-size: 12px; color: #94a3b8; text-align: right;">
+            覆盖: 黄金 · 铜 · 锑(AI) · 铟(光伏)
         </div>
     </div>
 </header>
 
 <div class="container">
-    <!-- 左侧：实时行情 (TradingView) -->
+    <!-- 左侧：行情看板 -->
     <aside class="sidebar">
-        <h3 style="border-bottom: 1px solid #334155; padding-bottom: 10px; margin-top:0;">实时盘面</h3>
-        <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
-            {
-            "colorTheme": "dark",
-            "dateRange": "12M",
-            "showChart": false,
-            "locale": "zh_CN",
-            "largeChartUrl": "",
-            "isTransparent": true,
-            "showSymbolLogo": true,
-            "width": "100%",
-            "height": "500",
-            "tabs": [
+        <div class="price-card">
+            <h3 style="margin-top:0; border-bottom:1px solid #334155; padding-bottom:10px;">📊 核心资产行情</h3>
+            <!-- TradingView Widget -->
+            <div class="tradingview-widget-container">
+                <div class="tradingview-widget-container__widget"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
                 {
-                "title": "贵金属",
-                "symbols": [
-                    { "s": "TVC:GOLD", "d": "现货黄金" },
-                    { "s": "TVC:SILVER", "d": "现货白银" },
-                    { "s": "TVC:PLATINUM", "d": "铂金" }
-                ]
-                },
-                {
-                "title": "AI与工业",
-                "symbols": [
-                    { "s": "COMEX:HG1!", "d": "铜 (AI/光伏)" },
-                    { "s": "TVC:USOIL", "d": "原油" },
-                    { "s": "COMEX:ALI1!", "d": "铝期货" }
-                ]
-                },
-                {
-                "title": "新能源",
-                "symbols": [
-                    { "s": "COMEX:HG1!", "d": "铜" },
-                    { "s": "TVC:SILVER", "d": "光伏用银" }
+                "colorTheme": "dark",
+                "dateRange": "12M",
+                "showChart": false,
+                "locale": "zh_CN",
+                "largeChartUrl": "",
+                "isTransparent": true,
+                "showSymbolLogo": true,
+                "width": "100%",
+                "height": "550",
+                "tabs": [
+                    {
+                    "title": "稀缺战略金属",
+                    "symbols": [
+                        { "s": "AMEX:REMX", "d": "稀有金属ETF (风向标)" },
+                        { "s": "SZSE:002155", "d": "湖南黄金 (锑龙头)" },
+                        { "s": "SZSE:000960", "d": "锡业股份 (铟龙头)" },
+                        { "s": "SZSE:002460", "d": "赣锋锂业" }
+                    ]
+                    },
+                    {
+                    "title": "贵金属/能源",
+                    "symbols": [
+                        { "s": "TVC:GOLD", "d": "现货黄金" },
+                        { "s": "TVC:SILVER", "d": "现货白银" },
+                        { "s": "NYMEX:CL1!", "d": "原油" }
+                    ]
+                    },
+                    {
+                    "title": "AI与工业",
+                    "symbols": [
+                        { "s": "COMEX:HG1!", "d": "铜 (数据中心)" },
+                        { "s": "LME:AL", "d": "铝 (光伏边框)" }
+                    ]
+                    }
                 ]
                 }
-            ]
-            }
-            </script>
-        </div>
-        <div style="margin-top: 15px; font-size: 12px; color: #64748b; line-height: 1.4;">
-            * 注：锂、稀土等小金属因交易所限制，建议关注下方新闻动态。
+                </script>
+            </div>
+            <div class="sidebar-note">
+                <strong>💡 为什么看不到“锑/铟”现货价格？</strong><br>
+                小金属通常为场外撮合交易(OTC)，无公开免费K线。请关注上方“湖南黄金(锑)”和“锡业股份(铟)”的股价，它们是最敏感的价格风向标。
+            </div>
         </div>
     </aside>
 
     <!-- 右侧：新闻流 -->
     <main>
         <div class="filter-bar">
-            <button class="filter-btn active" onclick="filterNews('all', this)">全部动态</button>
-            <button class="filter-btn" onclick="filterNews('type-precious', this)">💰 黄金/白银</button>
-            <button class="filter-btn" onclick="filterNews('type-energy', this)">🔋 锂/光伏</button>
-            <button class="filter-btn" onclick="filterNews('type-industry', this)">🤖 铜/AI金属</button>
+            <button class="filter-btn active" onclick="filterNews('all', this)">全部情报</button>
+            <button class="filter-btn" onclick="filterNews('type-strategic', this)">🧪 锑/铟/稀缺 (AI+光伏)</button>
+            <button class="filter-btn gold-btn" onclick="filterNews('type-precious', this)">💰 黄金/白银</button>
+            <button class="filter-btn" onclick="filterNews('type-industry', this)">🏭 铜/锂/光伏</button>
         </div>
 
         <div id="news-grid" class="news-grid">
-            <div class="loading-msg">正在接入全球卫星数据，搜索光伏、AI及贵金属动态...<br>(如果长时间无反应，请刷新页面)</div>
+            <div class="loading-msg">正在扫描全球数据源...<br>搜索关键词：锑、铟、HJT电池、AI算力材料</div>
         </div>
     </main>
 </div>
 
 <script>
-    // 定义关键词组
-    // 为了保证数据展示，我们使用Bing中文搜索RSS，这比rss2json抓取国外网站更稳定且不用翻译
+    // 配置Bing新闻搜索源 (RSS转JSON)
     const RSS_PROXY = "https://api.rss2json.com/v1/api.json?rss_url=";
     
-    // 我们构建三个不同的搜索源
     const SOURCES = [
+        {
+            name: "战略小金属",
+            type: "type-strategic",
+            tagClass: "tag-strategic",
+            // 重点搜索: 锑, 铟, 镓, 锗
+            keywords: "锑价格 OR 铟价格 OR 湖南黄金 锑 OR 异质结 铟 OR 战略金属 管制",
+            url: "https://www.bing.com/news/search?q=%E9%94%91%E4%BB%B7%E6%A0%BC+OR+%E9%93%9F%E4%BB%B7%E6%A0%BC+OR+%E6%B9%96%E5%8D%97%E9%BB%84%E9%87%91+%E9%94%91+OR+%E5%BC%82%E8%B4%A8%E7%BB%93+%E9%93%9F&format=rss"
+        },
+        {
+            name: "AI与新能源",
+            type: "type-industry",
+            tagClass: "tag-ind",
+            // 重点搜索: 铜, 锂, 光伏
+            keywords: "铜价 OR 碳酸锂 OR 光伏 银浆 OR AI算力 硬件 材料",
+            url: "https://www.bing.com/news/search?q=%E9%93%9C%E4%BB%B7+OR+%E7%A2%B3%E9%85%B8%E9%94%82+OR+%E5%85%89%E4%BC%8F+%E9%93%B6%E6%B5%86+OR+AI%E7%AE%97%E5%8A%9B+%E6%9D%90%E6%96%99&format=rss"
+        },
         {
             name: "贵金属",
             type: "type-precious",
-            // 搜索: 黄金价格 OR 白银价格 OR 贵金属走势
+            tagClass: "tag-gold",
+            // 重点搜索: 黄金, 白银
+            keywords: "黄金价格 OR 美联储 金价 OR 白银走势",
             url: "https://www.bing.com/news/search?q=%E9%BB%84%E9%87%91%E4%BB%B7%E6%A0%BC+OR+%E7%99%BD%E9%93%B6%E8%B5%B0%E5%8A%BF&format=rss"
-        },
-        {
-            name: "新能源/锂",
-            type: "type-energy",
-            // 搜索: 碳酸锂价格 OR 光伏组件 OR 太阳能 银浆
-            url: "https://www.bing.com/news/search?q=%E7%A2%B3%E9%85%B8%E9%94%82%E4%BB%B7%E6%A0%BC+OR+%E5%85%89%E4%BC%8F%E4%BA%A7%E4%B8%9A+OR+%E5%85%89%E4%BC%8F+%E7%99%BD%E9%93%B6&format=rss"
-        },
-        {
-            name: "AI/铜",
-            type: "type-industry",
-            // 搜索: 铜价 OR AI算力 芯片材料 OR 铜矿供应
-            url: "https://www.bing.com/news/search?q=%E9%93%9C%E4%BB%B7+OR+AI%E7%AE%97%E5%8A%9B+%E7%A1%AC%E4%BB%B6+OR+%E5%85%A8%E7%90%83%E9%93%9C%E7%9F%BF&format=rss"
         }
     ];
 
@@ -261,94 +260,82 @@
     async function fetchAllNews() {
         const container = document.getElementById('news-grid');
         const promises = SOURCES.map(source => {
-            // 对URL进行编码
-            const encodedUrl = encodeURIComponent(source.url);
-            return fetch(RSS_PROXY + encodedUrl)
+            return fetch(RSS_PROXY + encodeURIComponent(source.url))
                 .then(res => res.json())
                 .then(data => {
                     if(data.status === 'ok') {
                         return data.items.map(item => ({
                             ...item,
-                            sourceName: source.name,
-                            categoryType: source.type
+                            sourceLabel: source.name,
+                            categoryType: source.type,
+                            tagClass: source.tagClass
                         }));
                     }
                     return [];
                 })
-                .catch(err => {
-                    console.error("Fetch error:", err);
-                    return [];
-                });
+                .catch(err => []);
         });
 
         try {
             const results = await Promise.all(promises);
-            // 合并所有结果
-            allNewsData = results.flat();
-
-            // 按时间排序 (Bing RSS通常带pubDate)
-            allNewsData.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+            allNewsData = results.flat().sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
             
-            // 去重 (根据标题)
+            // 简单去重
             const seen = new Set();
             allNewsData = allNewsData.filter(item => {
-                const duplicate = seen.has(item.title);
+                if(seen.has(item.title)) return false;
                 seen.add(item.title);
-                return !duplicate;
+                return true;
             });
 
             renderNews(allNewsData);
 
         } catch (error) {
-            container.innerHTML = `<div class="error-msg">数据获取失败。可能是公共接口繁忙，请过几分钟再刷新试试。<br>错误详情: ${error.message}</div>`;
+            container.innerHTML = `<div class="loading-msg" style="color:red">数据加载受阻，请刷新重试。</div>`;
         }
     }
 
     function renderNews(newsItems) {
         const container = document.getElementById('news-grid');
         if (newsItems.length === 0) {
-            container.innerHTML = '<div class="loading-msg">暂无最新数据，请稍后再试。</div>';
+            container.innerHTML = '<div class="loading-msg">暂无最新数据。</div>';
             return;
         }
 
         container.innerHTML = newsItems.map(item => {
-            // 处理时间
             const date = new Date(item.pubDate);
             const timeStr = isNaN(date.getTime()) ? '刚刚' : date.toLocaleString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
-            
-            // 清理描述中的HTML
-            const cleanDesc = item.description ? item.description.replace(/<[^>]+>/g, '') : '';
+            const desc = item.description.replace(/<[^>]+>/g, '').substring(0, 120) + '...';
 
             return `
                 <div class="news-card ${item.categoryType}">
                     <div class="news-meta">
-                        <span class="tag">${item.sourceName}</span>
-                        <span>🕒 ${timeStr}</span>
+                        <span class="tag ${item.tagClass}">${item.sourceLabel}</span>
+                        <span>${timeStr}</span>
                     </div>
                     <h3 class="news-title">
                         <a href="${item.link}" target="_blank">${item.title}</a>
                     </h3>
-                    <div class="news-desc">${cleanDesc}</div>
+                    <div class="news-desc">${desc}</div>
                 </div>
             `;
         }).join('');
     }
 
-    // 过滤功能
     window.filterNews = function(type, btn) {
-        // 更新按钮状态
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            b.classList.remove('active');
+            if(b.classList.contains('gold-btn')) b.classList.remove('active'); // 特殊处理金色按钮
+        });
         btn.classList.add('active');
 
         if (type === 'all') {
             renderNews(allNewsData);
         } else {
-            const filtered = allNewsData.filter(item => item.categoryType === type);
-            renderNews(filtered);
+            renderNews(allNewsData.filter(item => item.categoryType === type));
         }
     }
 
-    // 启动
     fetchAllNews();
 </script>
 
