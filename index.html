@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全球贵金属与稀有金属情报局</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --gold: #f59e0b;
+            --lithium: #0ea5e9;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+        }
+        /* 顶部导航 */
+        header {
+            background: #000;
+            padding: 20px;
+            border-bottom: 2px solid var(--gold);
+            text-align: center;
+        }
+        h1 { margin: 0; font-size: 24px; }
+        
+        /* 布局 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+        
+        /* 侧边栏：行情 */
+        .sidebar {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            height: fit-content;
+        }
+        
+        /* 主内容：新闻 */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        /* 新闻卡片 */
+        .news-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--gold);
+            transition: transform 0.2s;
+        }
+        .news-card:hover {
+            transform: translateX(5px);
+            background: #273548;
+        }
+        .news-card.lithium { border-left-color: var(--lithium); }
+        
+        .news-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .news-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+            line-height: 1.4;
+        }
+        .news-title a {
+            color: var(--text-main);
+            text-decoration: none;
+        }
+        .news-title a:hover { color: var(--gold); }
+        .loading { text-align: center; padding: 20px; color: var(--text-muted); }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🌍 全球贵金属与稀有金属情报局</h1>
+    <p style="color: #666; font-size: 12px; margin-top: 5px;">实时聚合 Kitco, Mining.com 等全球资讯</p>
+</header>
+
+<div class="container">
+    <!-- 左侧：实时行情 (使用TradingView免费插件) -->
+    <aside class="sidebar">
+        <h3 style="border-bottom: 1px solid #444; padding-bottom: 10px;">实时行情</h3>
+        <!-- TradingView Widget BEGIN -->
+        <div class="tradingview-widget-container">
+            <div class="tradingview-widget-container__widget"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+            {
+            "colorTheme": "dark",
+            "dateRange": "12M",
+            "showChart": false,
+            "locale": "zh_CN",
+            "largeChartUrl": "",
+            "isTransparent": true,
+            "showSymbolLogo": true,
+            "width": "100%",
+            "height": "400",
+            "tabs": [
+                {
+                "title": "贵金属",
+                "symbols": [
+                    { "s": "TVC:GOLD", "d": "现货黄金" },
+                    { "s": "TVC:SILVER", "d": "现货白银" },
+                    { "s": "TVC:PLATINUM", "d": "铂金" }
+                ]
+                },
+                {
+                "title": "能源/稀有",
+                "symbols": [
+                    { "s": "COMEX:HG1!", "d": "铜期货" },
+                    { "s": "NYMEX:CL1!", "d": "原油" }
+                ]
+                }
+            ]
+            }
+            </script>
+        </div>
+        <!-- TradingView Widget END -->
+    </aside>
+
+    <!-- 右侧：新闻流 -->
+    <main class="main-content" id="news-container">
+        <div class="loading">正在连接全球卫星获取最新数据...</div>
+    </main>
+</div>
+
+<script>
+    // 配置RSS源 (利用 rss2json 将 XML 转为 JSON，从而不需要后端)
+    // 注意：rss2json 免费版有调用频率限制，如果这就是个演示，足够了。
+    const RSS_URLS = [
+        // Kitco 黄金新闻
+        'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.kitco.com%2Frss%2Fcategory%2Fcommodities%2Fgold',
+        // Mining.com 电池金属新闻
+        'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.mining.com%2Fcategory%2Fbattery-metals%2Ffeed%2F'
+    ];
+
+    async function fetchNews() {
+        const container = document.getElementById('news-container');
+        let allNews = [];
+
+        try {
+            // 并行抓取所有源
+            const promises = RSS_URLS.map(url => fetch(url).then(res => res.json()));
+            const results = await Promise.all(promises);
+
+            results.forEach(data => {
+                if(data.status === 'ok') {
+                    data.items.forEach(item => {
+                        // 简单区分来源
+                        const isBattery = data.feed.url.includes('mining.com');
+                        allNews.push({
+                            title: item.title,
+                            link: item.link,
+                            date: new Date(item.pubDate),
+                            source: isBattery ? 'Mining.com (稀有金属)' : 'Kitco (贵金属)',
+                            type: isBattery ? 'lithium' : 'gold',
+                            desc: item.description.replace(/<[^>]+>/g, '').substring(0, 100) + '...' // 去除HTML标签
+                        });
+                    });
+                }
+            });
+
+            // 按时间排序（最新的在前面）
+            allNews.sort((a, b) => b.date - a.date);
+
+            // 渲染到页面
+            container.innerHTML = '';
+            allNews.forEach(news => {
+                const dateStr = news.date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
+                
+                const html = `
+                    <div class="news-card ${news.type}">
+                        <div class="news-meta">
+                            <span style="color: ${news.type === 'gold' ? '#f59e0b' : '#0ea5e9'}">● ${news.source}</span>
+                            <span>${dateStr}</span>
+                        </div>
+                        <h3 class="news-title">
+                            <a href="${news.link}" target="_blank">${news.title}</a>
+                        </h3>
+                        <div style="font-size: 14px; color: #cbd5e1;">${news.desc}</div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+
+        } catch (error) {
+            container.innerHTML = `<div class="loading" style="color:red">数据加载失败，请刷新重试。<br>错误: ${error.message}</div>`;
+        }
+    }
+
+    // 页面加载时执行
+    fetchNews();
+</script>
+
+</body>
+</html>
